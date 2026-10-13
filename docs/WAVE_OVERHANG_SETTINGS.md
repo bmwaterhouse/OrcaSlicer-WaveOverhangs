@@ -92,13 +92,20 @@ Number of outer perimeters preserved inside the overhang region. Everything inwa
 
 Travel pattern between wave lines.
 
-- **Type:** enum (`monotonic` | `zigzag` | `smart`) · **Default:** `smart`
+- **Type:** enum (`monotonic` | `zigzag` | `smart` | `split`) · **Default:** `smart`
 
 | Choice | Behavior |
 |---|---|
 | `monotonic` | Each line printed independently, same direction. Safest flow consistency, most travel. |
 | `zigzag` | Lines connected into a back-and-forth meander. Minimum travel, but start-of-line is sometimes on the unsupported side. |
 | `smart` | Starts each line from the better-supported end. Best default. |
+| `split` | Splits each line at its midpoint into two equal halves. Each half starts at an outer edge and ends in the middle, so both edges get a clean line start and the end-of-line retraction happens mid-line instead of at an edge. Both halves of a line are printed before the next line. |
+
+- **`split` details:**
+  - The half whose outer edge is closer to where the previous line finished is printed first. The second half finishes against the end of the first one.
+  - Lines shorter than 4× the wave line width, and closed loops (no outer edge to start from), are printed whole, oriented as in `smart`.
+  - Each half is its own extrusion, so `wave_overhang_end_retract_length` fires at the end of each half (in the middle of the line). `wave_overhang_min_wave_time` times the two halves together as one line, so splitting adds no extra dwell.
+  - Costs one extra travel and retraction per line compared with `smart`.
 
 #### `wave_overhang_perimeter_overlap`
 

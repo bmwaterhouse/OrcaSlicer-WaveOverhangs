@@ -592,6 +592,10 @@ private:
     // Orca: accumulated wave-extrusion time on the current layer (seconds).
     // Used by wave_overhang_min_layer_time; reset at each layer change.
     double                              m_wave_layer_accumulated_time = 0.;
+    // Orca: extrusion time of the first half of a split wave line (Split
+    // wave_overhang_pattern), held until the second half so min_wave_time
+    // pads the pair as one wave line.
+    double                              m_wave_split_lead_time = 0.;
 
     std::unique_ptr<CoolingBuffer>      m_cooling_buffer;
     std::unique_ptr<SpiralVase>         m_spiral_vase;

@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning fol
 ## [Unreleased]
 
 ### Added
+- **`split` wave-overhang pattern.** New `wave_overhang_pattern` choice that cuts each wave line at its midpoint and prints both halves from the outer edges inward, finishing in the middle. Targets end-of-line curl at the overhang edges: with `smart` the start of each line is clean but the end (where the retraction happens) curls up, and with `zigzag` both ends curl slightly. Lines shorter than 4× the wave line width and closed loops fall back to `smart`. `wave_overhang_min_wave_time` pads the two halves as one line.
 - **Floor-layer speed ramp.** New `wave_overhang_floor_speed_ramp` config (default 0 = step function, current behaviour) interpolates `wave_overhang_floor_print_speed` and `wave_overhang_floor_perimeter_speed` linearly from the override speed back up to the normal speed across N layers above the wave. Distance is stamped per-extrusion during the existing tagging pass. Helpful for releasing warping stress gradually instead of at a single layer boundary (closes #77).
 
 ### Removed

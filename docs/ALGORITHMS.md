@@ -50,7 +50,7 @@ flowchart TD
 ## Key parameters
 
 - `wave_overhang_line_spacing`: distance between successive wavefronts
-- `wave_overhang_pattern`: Smart / Monotonic / ZigZag, affects how fronts are traversed after all are generated
+- `wave_overhang_pattern`: Smart / Monotonic / ZigZag / Split, affects how fronts are traversed after all are generated (Split prints each front as two halves, each from an outer edge into the midpoint)
 - `wave_overhang_perimeter_overlap`: how far waves extend toward the outer wall
 - `wave_overhang_minimum_width`: split waves at narrow necks narrower than this
 - `wave_overhang_min_new_area`: saturation threshold

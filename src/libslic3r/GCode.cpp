@@ -2551,6 +2551,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                     switch (rc.wave_overhang_pattern.value) {
                         case WaveOverhangPattern::Monotonic: pattern = "monotonic"; break;
                         case WaveOverhangPattern::ZigZag:    pattern = "zigzag";    break;
+                        case WaveOverhangPattern::Split:     pattern = "split";     break;
                         case WaveOverhangPattern::Smart:
                         default:                             pattern = "smart";     break;
                     }
@@ -5519,6 +5520,7 @@ LayerResult GCode::process_layer(
             result.gcode = std::move(gcode);
         }
         m_wave_layer_accumulated_time = 0.;
+        m_wave_split_lead_time        = 0.;
     } else {
         result.gcode = std::move(gcode);
     }
@@ -7259,12 +7261,22 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
         const double region_time_s  = path_length_mm / wave_speed;
         m_wave_layer_accumulated_time += region_time_s;
 
-        const double min_wave_time = m_config.wave_overhang_min_wave_time.value;
-        if (min_wave_time > 0. && region_time_s < min_wave_time) {
-            const double dwell_ms = (min_wave_time - region_time_s) * 1000.;
-            char buf[64];
-            snprintf(buf, sizeof(buf), "G4 P%d ; wave-overhang min_wave_time dwell\n", int(dwell_ms + 0.5));
-            gcode += buf;
+        // Split pattern: the first half of a split wave line carries its time
+        // over to the second half, so the pair is padded as one wave line
+        // instead of dwelling between the two halves.
+        if (path.wave_overhang_split_lead) {
+            m_wave_split_lead_time += region_time_s;
+        } else {
+            const double line_time_s = region_time_s + m_wave_split_lead_time;
+            m_wave_split_lead_time = 0.;
+
+            const double min_wave_time = m_config.wave_overhang_min_wave_time.value;
+            if (min_wave_time > 0. && line_time_s < min_wave_time) {
+                const double dwell_ms = (min_wave_time - line_time_s) * 1000.;
+                char buf[64];
+                snprintf(buf, sizeof(buf), "G4 P%d ; wave-overhang min_wave_time dwell\n", int(dwell_ms + 0.5));
+                gcode += buf;
+            }
         }
     }
 

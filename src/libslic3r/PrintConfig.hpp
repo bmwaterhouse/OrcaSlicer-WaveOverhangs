@@ -84,7 +84,8 @@ enum WaveOverhangSeamMode {
 enum class WaveOverhangPattern : int {
     Monotonic,
     ZigZag,
-    Smart
+    Smart,
+    Split
 };
 
 enum AuthorizationType {

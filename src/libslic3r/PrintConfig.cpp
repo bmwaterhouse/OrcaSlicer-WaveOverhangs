@@ -188,7 +188,8 @@ CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(WaveOverhangSeamMode)
 static t_config_enum_values s_keys_map_WaveOverhangPattern {
     { "monotonic", int(WaveOverhangPattern::Monotonic) },
     { "zigzag",    int(WaveOverhangPattern::ZigZag) },
-    { "smart",     int(WaveOverhangPattern::Smart) }
+    { "smart",     int(WaveOverhangPattern::Smart) },
+    { "split",     int(WaveOverhangPattern::Split) }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(WaveOverhangPattern)
 
@@ -4652,14 +4653,19 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Pattern");
     def->category = L("Strength");
     def->tooltip = L("Controls whether wave-overhang tracks are printed one direction at a time (monotonic), "
-                     "connected into a back-and-forth meander (zig-zag), or started from the better-supported end of each new wave line (smart).");
+                     "connected into a back-and-forth meander (zig-zag), started from the better-supported end of each new wave line (smart), "
+                     "or split at their midpoint so both halves start at an outer edge and finish in the middle (split). "
+                     "Split moves the end-of-line retraction from the edge of the overhang to the middle of each line, "
+                     "so neither edge is left with a line end that can curl up.");
     def->enum_keys_map = &ConfigOptionEnum<WaveOverhangPattern>::get_enum_values();
     def->enum_values.push_back("monotonic");
     def->enum_values.push_back("zigzag");
     def->enum_values.push_back("smart");
+    def->enum_values.push_back("split");
     def->enum_labels.push_back(L("Monotonic"));
     def->enum_labels.push_back(L("Zigzag"));
     def->enum_labels.push_back(L("Smart"));
+    def->enum_labels.push_back(L("Split"));
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<WaveOverhangPattern>(WaveOverhangPattern::Smart));
 
