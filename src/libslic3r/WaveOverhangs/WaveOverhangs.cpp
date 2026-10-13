@@ -449,6 +449,38 @@ static ExtrusionPath make_wave_path(Polyline &&polyline, const Flow &flow)
     return path;
 }
 
+// Cut a wave line at its arc-length midpoint for the Split pattern. Both halves
+// run from one of the line's original endpoints INTO the midpoint:
+// first = first_point -> mid, second = last_point -> mid. Each half therefore
+// starts at an outer edge of the overhang and finishes (and retracts) in the
+// middle of the line.
+static std::pair<Polyline, Polyline> split_inward_at_midpoint(const Polyline &line)
+{
+    const double half_length = 0.5 * line.length();
+    double walked = 0.;
+    for (size_t i = 1; i < line.points.size(); ++i) {
+        const Vec2d  a = line.points[i - 1].cast<double>();
+        const Vec2d  b = line.points[i].cast<double>();
+        const double segment_length = (b - a).norm();
+        if (segment_length <= 0. || walked + segment_length < half_length) {
+            walked += segment_length;
+            continue;
+        }
+
+        const Point mid((a + (half_length - walked) / segment_length * (b - a)).cast<coord_t>());
+        Polyline from_first;
+        from_first.points.assign(line.points.begin(), line.points.begin() + i);
+        if (from_first.last_point() != mid)
+            from_first.points.push_back(mid);
+        Polyline from_last;
+        from_last.points.assign(line.points.rbegin(), line.points.rend() - i);
+        if (from_last.last_point() != mid)
+            from_last.points.push_back(mid);
+        return { std::move(from_first), std::move(from_last) };
+    }
+    return { line, Polyline() };
+}
+
 void append_wave_fronts(ExtrusionPaths &overhang_region,
                         const Polylines &fronts,
                         const Flow      &wave_flow,
@@ -570,11 +602,41 @@ void append_wave_fronts(ExtrusionPaths &overhang_region,
     ExtrusionPaths support_paths = overhang_region;
     const coord_t support_reach = std::max<coord_t>(wave_flow.scaled_width(), connector_limit);
     const coord_t prefix_length = std::max<coord_t>(wave_flow.scaled_width(), connector_limit / 2);
+    // Split pattern: lines shorter than this are not split, since two short
+    // stubs would each pay a start, a retraction and a travel for very little
+    // extrusion. Lines whose ends (nearly) meet are closed loops with no outer
+    // edge to start from. Both fall back to the Smart orientation below.
+    const double split_min_length     = 4. * double(wave_flow.scaled_width());
+    const double split_closed_dist_sq = double(wave_flow.scaled_width()) * double(wave_flow.scaled_width());
 
     for (const Polyline &source_front : fronts) {
         Polyline front = source_front;
         if (front.points.size() < 2)
             continue;
+
+        if (wave_pattern == WaveOverhangPattern::Split
+            && front.length() >= split_min_length
+            && (front.first_point() - front.last_point()).cast<double>().squaredNorm() > split_closed_dist_sq) {
+            auto [from_first, from_last] = split_inward_at_midpoint(front);
+            if (from_first.points.size() >= 2 && from_last.points.size() >= 2) {
+                // Both halves end at the midpoint, so print first the half whose
+                // outer edge is closer to where the previous wave line finished.
+                if (! overhang_region.empty()) {
+                    const Point &from = overhang_region.back().last_point();
+                    if ((from_last.first_point() - from).cast<double>().squaredNorm() <
+                        (from_first.first_point() - from).cast<double>().squaredNorm())
+                        std::swap(from_first, from_last);
+                }
+                ExtrusionPath lead = make_wave_path(std::move(from_first), wave_flow);
+                lead.wave_overhang_split_lead = true;
+                ExtrusionPath tail = make_wave_path(std::move(from_last), wave_flow);
+                support_paths.push_back(lead);
+                support_paths.push_back(tail);
+                overhang_region.push_back(std::move(lead));
+                overhang_region.push_back(std::move(tail));
+                continue;
+            }
+        }
 
         Polyline reversed = front;
         reversed.reverse();

@@ -92,13 +92,34 @@ Number of outer perimeters preserved inside the overhang region. Everything inwa
 
 Travel pattern between wave lines.
 
-- **Type:** enum (`monotonic` | `zigzag` | `smart`) · **Default:** `smart`
+- **Type:** enum (`monotonic` | `zigzag` | `smart` | `split`) · **Default:** `smart`
 
 | Choice | Behavior |
 |---|---|
 | `monotonic` | Each line printed independently, same direction. Safest flow consistency, most travel. |
 | `zigzag` | Lines connected into a back-and-forth meander. Minimum travel, but start-of-line is sometimes on the unsupported side. |
 | `smart` | Starts each line from the better-supported end. Best default. |
+| `split` | Splits each line at its midpoint into two equal halves. Each half starts at an outer edge and ends in the middle, so both edges get a clean line start and the end-of-line retraction happens mid-line instead of at an edge. Both halves of a line are printed before the next line. |
+
+- **`split` details:**
+  - The half whose outer edge is closer to where the previous line finished is printed first. The second half finishes against the end of the first one.
+  - Lines shorter than 4× the wave line width, and closed loops (no outer edge to start from), are printed whole, oriented as in `smart`.
+  - Each half is its own extrusion, so `wave_overhang_end_retract_length` fires at the end of each half (in the middle of the line). `wave_overhang_min_wave_time` times the two halves together as one line, so splitting adds no extra dwell.
+  - Costs one extra travel and retraction per line compared with `smart`.
+  - The wipe at the end of each half runs forward along the other half by default. See `wave_overhang_split_overshoot_wipe`.
+
+#### `wave_overhang_split_overshoot_wipe`
+
+Split pattern only. Changes the direction of the wipe at the end of each half line: instead of wiping back over the half that was just printed, the nozzle wipes forward past the midpoint along the other half's path.
+
+- **Type:** bool · **Default:** `true` · Shown only when `wave_overhang_pattern` is `split`.
+- **Why:** a wave line hangs in air and is held only by the line beside it. Wiping back over its still-soft end, with the melt string still attached to the nozzle, tugs the end upward, and the Z-hop then lifts right above it. Wiping forward moves the nozzle away from the end in the direction the line was laid, so the string breaks ahead of the line and the Z-hop happens away from the end.
+- **What it does:**
+  - First half: the wipe runs over the empty space where the second half will be printed.
+  - Second half: the wipe runs back over the end of the first half, toward the first half's outer edge.
+- **Uses the normal wipe:** the existing Wipe distance, Wipe speed and Retract amount before wipe settings are unchanged, and the wipe retracts as it moves, so no extra material is extruded. Only the direction changes.
+- **When it happens:** like any wipe, only when Wipe while retracting is on and the travel after the half line retracts. Short travels below the filament's minimum retraction travel don't retract, so they don't wipe either.
+- **Tuning:** keep `wave_overhang_end_retract_length` at `0` with this on. That setting retracts with the nozzle standing still at the line end before any wipe, which is what this option avoids. With Retract amount before wipe below 100%, more of the retraction happens while the nozzle is moving away. Turn this off to compare against the normal backward wipe.
 
 #### `wave_overhang_perimeter_overlap`
 
