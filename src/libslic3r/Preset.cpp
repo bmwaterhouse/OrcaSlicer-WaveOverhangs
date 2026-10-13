@@ -907,6 +907,7 @@ static std::vector<std::string> s_Preset_print_options {
     "wave_overhang_spacing_mode", "wave_overhang_seam_mode",
     "wave_overhang_debug_gcode", "wave_overhang_min_length",
     "wave_overhang_max_iterations", "wave_overhang_min_new_area", "wave_overhang_end_retract_length",
+    "wave_overhang_split_overshoot_wipe",
     "wave_overhang_corner_taper_enable", "wave_overhang_line_spacing_corner",
     "wave_overhang_corner_taper_distance", "wave_overhang_corner_angle_threshold",
     "seam_position", "staggered_inner_seams", "wall_sequence", "is_infill_first", "sparse_infill_density","fill_multiline", "sparse_infill_pattern", "lateral_lattice_angle_1", "lateral_lattice_angle_2", "infill_overhang_angle", "top_surface_pattern", "bottom_surface_pattern",

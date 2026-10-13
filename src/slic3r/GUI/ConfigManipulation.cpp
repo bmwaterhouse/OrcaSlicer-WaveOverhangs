@@ -1003,6 +1003,11 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig *config, co
     })
         toggle_line(k, wo_enabled);
 
+    // Orca: Split-pattern sub-option. Only meaningful when the wave pattern
+    // splits lines at their midpoint.
+    toggle_line("wave_overhang_split_overshoot_wipe",
+                wo_enabled && config->opt_enum<WaveOverhangPattern>("wave_overhang_pattern") == WaveOverhangPattern::Split);
+
     // Orca: corner-reinforcement sub-options. Master toggle reveals the three
     // tunables, same shape as the Hilbert-floor section below.
     const bool wo_corner_taper = wo_enabled

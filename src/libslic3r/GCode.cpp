@@ -2583,7 +2583,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                         " perimeter_overlap=%.2f minimum_wave_width=%.2f"
                         " min_new_area=%.4f"
                         " corner_enable=%d corner_spacing=%.3f corner_taper=%.2f corner_angle=%.0f"
-                        " end_retract=%.2f"
+                        " end_retract=%.2f overshoot_wipe=%d"
                         " nozzle_temp_override=%d min_wave_time=%.2f min_layer_time=%.2f"
                         " wall_loops=%d top_shell_layers=%d bottom_shell_layers=%d"
                         " infill_density=%.0f infill_pattern=%s"
@@ -2608,6 +2608,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                         rc.wave_overhang_corner_taper_distance.value,
                         rc.wave_overhang_corner_angle_threshold.value,
                         rc.wave_overhang_end_retract_length.value,
+                        rc.wave_overhang_split_overshoot_wipe.value ? 1 : 0,
                         rc.wave_overhang_nozzle_temp.value,
                         rc.wave_overhang_min_wave_time.value,
                         rc.wave_overhang_min_layer_time.value,
@@ -5571,6 +5572,7 @@ LayerResult GCode::process_layer(
         }
         m_wave_layer_accumulated_time = 0.;
         m_wave_split_lead_time        = 0.;
+        m_wave_split_lead_path.clear();
     } else {
         result.gcode = std::move(gcode);
     }
@@ -6123,6 +6125,22 @@ std::string GCode::extrude_path(ExtrusionPath path, std::string description, dou
             }
         } else
             m_wipe.path.reverse();
+
+        // Orca: wave-overhang Split overshoot wipe. Each half of a split wave line ends at
+        // the midpoint; rather than wiping back over the half just printed, it wipes forward
+        // past the midpoint along the other half's path.
+        if (path.wave_overhang && m_config.wave_overhang_split_overshoot_wipe.value) {
+            if (path.wave_overhang_split_lead) {
+                // The lead's forward wipe runs along the tail half, which is only known when
+                // the tail starts (see _extrude()). Keep the lead for the tail's wipe.
+                m_wave_split_lead_path = path.polyline;
+            } else if (! m_wave_split_lead_path.empty()) {
+                // Tail half: wipe forward over the lead half, toward the lead's outer edge.
+                m_wipe.path = std::move(m_wave_split_lead_path);
+                m_wipe.path.reverse();
+                m_wave_split_lead_path.clear();
+            }
+        }
     }
 
     return gcode;
@@ -6418,6 +6436,15 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
         auto target_z = get_sloped_z(sloped->slope_begin.z_ratio);
         slope_need_z_travel = m_writer.will_move_z(target_z);
     }
+    // Orca: wave-overhang Split overshoot wipe, lead half (see extrude_path()). This path is
+    // the tail of a split pair, so the lead that just finished at the midpoint wipes forward
+    // along this tail, from the midpoint toward the tail's outer edge. The travel below
+    // performs that wipe when it retracts.
+    if (path.wave_overhang && ! path.wave_overhang_split_lead && ! m_wave_split_lead_path.empty() && m_wipe.has_path()) {
+        m_wipe.path = path.polyline;
+        m_wipe.path.reverse();
+    }
+
     // Move to first point of extrusion path
     // path is 2D. But in slope lift case, lift z is done in travel_to function.
     // Add m_need_change_layer_lift_z when change_layer in case of no lift if m_last_pos is equal to path.first_point() by chance
