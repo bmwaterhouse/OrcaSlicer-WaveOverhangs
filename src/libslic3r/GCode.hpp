@@ -596,6 +596,10 @@ private:
     // wave_overhang_pattern), held until the second half so min_wave_time
     // pads the pair as one wave line.
     double                              m_wave_split_lead_time = 0.;
+    // Orca: polyline of the last split lead half (Split wave_overhang_pattern with
+    // wave_overhang_split_overshoot_wipe), held until its tail half so each half
+    // can wipe forward along the other instead of back over itself.
+    Polyline                            m_wave_split_lead_path;
 
     std::unique_ptr<CoolingBuffer>      m_cooling_buffer;
     std::unique_ptr<SpiralVase>         m_spiral_vase;

@@ -2424,6 +2424,7 @@ void TabPrint::build()
         // Pattern: how the wave is shaped.
         optgroup = page->new_optgroup(L("Pattern"), L"param_overhang");
         optgroup->append_single_option_line("wave_overhang_pattern");
+        optgroup->append_single_option_line("wave_overhang_split_overshoot_wipe");
         optgroup->append_single_option_line("wave_overhang_seam_mode");
         optgroup->append_single_option_line("wave_overhang_outer_perimeters");
         optgroup->append_single_option_line("wave_overhang_line_spacing");

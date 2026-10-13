@@ -1175,6 +1175,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,                     wave_overhang_corner_taper_distance))
     ((ConfigOptionFloat,                     wave_overhang_corner_angle_threshold))
     ((ConfigOptionFloat,                     wave_overhang_end_retract_length))
+    ((ConfigOptionBool,                      wave_overhang_split_overshoot_wipe))
     ((ConfigOptionBool,                      support_remaining_areas_after_wave_overhangs))
     ((ConfigOptionInt, wall_filament))
     ((ConfigOptionFloatOrPercent, inner_wall_line_width))

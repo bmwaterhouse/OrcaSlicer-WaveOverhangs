@@ -4859,6 +4859,19 @@ void PrintConfigDef::init_fff_params()
     def->max = 10;
     def->set_default_value(new ConfigOptionFloat(0.0));
 
+    def = this->add("wave_overhang_split_overshoot_wipe", coBool);
+    def->label = L("Overshoot wipe");
+    def->category = L("Quality");
+    def->tooltip = L("Split pattern only. At the end of each half line, wipe forward past the midpoint along the "
+                     "other half's path instead of back over the half just printed. The nozzle moves away from the "
+                     "line end in the direction it was laid, so the end is not dragged back and lifted. "
+                     "The first half's wipe runs over the empty space where the second half will go; the second "
+                     "half's wipe runs back over the end of the first half. Uses the existing wipe distance, "
+                     "wipe speed and retract amount before wipe, and retracts while wiping, so no extra material "
+                     "is extruded. Has no effect when Wipe while retracting is off.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(true));
+
     def = this->add("wave_overhang_floor_layers", coInt);
     def->label = L("Floor layers");
     def->category = L("Strength");
